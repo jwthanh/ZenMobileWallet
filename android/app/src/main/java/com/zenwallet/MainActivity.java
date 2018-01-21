@@ -1,4 +1,4 @@
-package com.reactnativex;
+package com.zenwallet;
 
 import com.reactnativenavigation.controllers.SplashActivity;
 

@@ -1,4 +1,4 @@
-package com.reactnativex;
+package com.zenwallet;
 
 import android.support.annotation.Nullable;
 

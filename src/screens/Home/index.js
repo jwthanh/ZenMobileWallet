@@ -1,62 +1,76 @@
 import React, { Component } from 'react';
-import PropTypes, { shape } from 'prop-types';
-import { ActivityIndicator, ListView, Text, View } from 'react-native';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import homeActions from '../../actions/home';
+import { Animated, Text, View, ScrollView, Dimensions } from 'react-native';
+import Overview from '../../components/Overview';
+import Card from '../../components/Card';
 import styles from './styles';
+import device from '../../utils/device';
 
-class Home extends Component<{}> {
-  componentDidMount() {
-    this.props.getMovies();
+const HEADER_MAX_HEIGHT = Dimensions.get('window').width * 0.6;
+const HEADER_MIN_HEIGHT = device.isIphoneX() ? 40 : 20;
+const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
+
+class Home extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      scrollY: new Animated.Value(0),
+    };
   }
-
   render() {
-    if (this.props.isLoading) {
-      return (
-        <View style={styles.container}>
-          <ActivityIndicator />
-        </View>
-      );
-    }
-    const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-    const dataSource = ds.cloneWithRows(this.props.movies);
+    const headerHeight = this.state.scrollY.interpolate({
+      inputRange: [0, HEADER_SCROLL_DISTANCE],
+      outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+      extrapolate: 'clamp',
+    });
+    const headerOpacity = this.state.scrollY.interpolate({
+      inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+      outputRange: [1, 1, 0],
+      extrapolate: 'clamp',
+    });
+    const barOpacity = this.state.scrollY.interpolate({
+      inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+      outputRange: [0, 0, 1],
+      extrapolate: 'clamp',
+    });
+    const headerTranslate = this.state.scrollY.interpolate({
+      inputRange: [0, HEADER_SCROLL_DISTANCE],
+      outputRange: [0, -50],
+      extrapolate: 'clamp',
+    });
     return (
       <View style={styles.container}>
-        <ListView
-          dataSource={dataSource}
-          renderRow={rowData => (
-            <Text>
-              {rowData.title}, {rowData.releaseYear}
-            </Text>
-          )}
-        />
+        <Animated.View style={[styles.header, { height: headerHeight }]}>
+          <Animated.View
+            style={{ opacity: headerOpacity, transform: [{ translateY: headerTranslate }] }}
+          >
+            <Overview />
+          </Animated.View>
+          <View style={styles.bar}>
+            <Text style={styles.title}>Title</Text>
+          </View>
+        </Animated.View>
+        <ScrollView
+          style={{ flex: 1, marginTop: Dimensions.get('window').width * -0.12 }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: this.state.scrollY } } }])}
+        >
+          <View style={{ marginTop: HEADER_MAX_HEIGHT }}>
+            <Card title="Send ZEN" />
+            <Card title="Receive ZEN" />
+            <Card title="History transaction" />
+            <Card title="Settings" />
+          </View>
+        </ScrollView>
+        <Animated.View style={styles.headerTransparent}>
+          <Animated.View style={{ opacity: barOpacity }}>
+            <View style={[styles.bar, { height: HEADER_MIN_HEIGHT }]} />
+          </Animated.View>
+        </Animated.View>
       </View>
     );
   }
 }
 
-Home.propTypes = {
-  isLoading: PropTypes.bool,
-  movies: PropTypes.arrayOf(shape({
-    title: PropTypes.string.isRequired,
-    releaseYear: PropTypes.string.isRequired,
-  })),
-  getMovies: PropTypes.func.isRequired,
-};
-
-Home.defaultProps = {
-  isLoading: true,
-  movies: [],
-};
-
-function mapStateToProps(state) {
-  return {
-    isLoading: state.home.isLoading,
-    movies: state.home.movies,
-  };
-}
-
-const mapDispatchToProps = dispatch => bindActionCreators(homeActions, dispatch);
-
-export default connect(mapStateToProps, mapDispatchToProps)(Home);
+export default Home;

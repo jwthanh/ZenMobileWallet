@@ -15,6 +15,10 @@ const App = () => {
     screen: {
       screen: 'rnx.Home',
       title: 'ReactNativeX',
+      navigatorStyle: {
+        navBarHidden: true,
+        statusBarTextColorSchemeSingleScreen: 'light',
+      },
     },
   });
   return true;
